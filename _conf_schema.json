@@ -1,0 +1,16 @@
+{
+    "moyu_api_url": {
+        "description": "摸鱼日历API地址",
+        "type": "string",
+        "hint": "默认https://api.52vmy.cn/api/wl/moyu",
+        "default": "",
+        "obvious_hint": true
+    },
+    "default_timezone": {
+        "description": "摸鱼日历时区",
+        "type": "string",
+        "hint": "默认Asia/Shanghai",
+        "default": "",
+        "obvious_hint": true
+    }
+}

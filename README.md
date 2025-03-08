@@ -1,10 +1,9 @@
-# helloworld
+# 摸鱼人日历
 
-AstrBot 插件模板
-
-A template plugin for AstrBot plugin feature
+由原作者[Quirrel-zh]https://github.com/Quirrel-zh/astrbot_plugin_moyuren 项目衍生加强
 
 # 支持
 
-[帮助文档](https://astrbot.soulter.top/center/docs/%E5%BC%80%E5%8F%91/%E6%8F%92%E4%BB%B6%E5%BC%80%E5%8F%91/
-)
+支持自定义时间时区，自定义api,自定义检测间隔，支持立即发送，支持节假日定时发送。
+
+[帮助文档](https://github.com/gsh15/astrbot_plugin_moyuren/tree/master)
