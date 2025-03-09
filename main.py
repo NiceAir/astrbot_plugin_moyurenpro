@@ -32,7 +32,20 @@ class MyPlugin(Star):
         plugin_dir = os.path.dirname(os.path.abspath(__file__))
         # 将 schedule.json 存储在插件目录
         self.schedule_file = os.path.join(plugin_dir, 'schedule.json')
+        self.schedule_file_mtime = os.path.getmtime(self.schedule_file)
         self.load_schedule()
+        asyncio.get_event_loop().create_task(self.check_schedule_changes())
+
+    async def check_schedule_changes(self):
+        while True:
+            try:
+                current_mtime = os.path.getmtime(self.schedule_file)
+                if current_mtime != self.schedule_file_mtime:
+                    self.load_schedule()
+                    self.schedule_file_mtime = current_mtime
+            except Exception as e:
+                logger.error(f"检查 schedule.json 文件修改时间时出错: {e}")
+            await asyncio.sleep(60)  # 每隔 60 秒检查一次
 
     def load_schedule(self):
         if os.path.exists(self.schedule_file):
