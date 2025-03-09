@@ -10,7 +10,6 @@
 ```
 docker exec -it astrbot /bin/bash #docker部署进入astrbot容器，运行bash进行安装
 
-pip install --upgrade pip
 pip install chinesecalendar
 ```
 
