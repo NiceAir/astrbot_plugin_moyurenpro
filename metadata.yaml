@@ -3,4 +3,4 @@ desc: 摸鱼人日历，支持自定义时间时区，自定义api，支持立�
 help: 输入 /set_time 定时时间（格式：HH:MM或HHMM） 设置时间，输入 /reset_time 重置时间，输入 /execute_now 立即发送。 # 插件的帮助信息
 version: v1.3.3 # 插件版本号。格式：v1.1.1 或者 v1.1
 author: quirrel-zh/DuBwTf # 作者
-repo: https://github.com/DuBwTf/astrbot_plugin_moyuren/tree/master # 插件的仓库地址
+repo: https://github.com/DuBwTf/astrbot_plugin_moyurenpro # 插件的仓库地址
