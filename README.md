@@ -8,6 +8,8 @@
 
 需安装第三方库[chinese_calendar](https://github.com/LKI/chinese-calendar)
 ```
+docker exec -it astrbot /bin/bash
+pip install --upgrade pip
 pip install chinesecalendar
 ```
 
