@@ -4,7 +4,7 @@
 
 # 支持
 
-支持自定义时间、时区，自定义api，支持立即发送，支持节假日定时发送。
+支持自定义时间、时区，自定义api，支持立即发送，工作日定时发送。
 
 需安装第三方库[chinese_calendar](https://github.com/LKI/chinese-calendar)
 ```
