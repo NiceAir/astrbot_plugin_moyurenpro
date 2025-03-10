@@ -1,4 +1,11 @@
 {
+    "enabled": {
+        "description": "开关摸鱼日历任务",
+        "type": "bool",
+        "hint": "",
+        "default": true,
+        "obvious_hint": true
+    },
     "moyu_api_url": {
         "description": "摸鱼日历API地址",
         "type": "string",

@@ -11,16 +11,16 @@ import tempfile
 from zoneinfo import ZoneInfo  # 导入 ZoneInfo 用于处理时区
 import chinese_calendar as calendar  # 导入 chinese_calendar 库
 
-@register("moyuren", "quirrel", "一个简单的摸鱼人日历插件", "1.3.3")
+@register("moyuren", "quirrel", "一个简单的摸鱼人日历插件", "1.3.5")
 class MyPlugin(Star):
     def __init__(self, context: Context, config: dict):
         super().__init__(context)
-        asyncio.get_event_loop().create_task(self.scheduled_task())
+        self.enabled = config.get("enabled", True)  # 从配置文件读取摸鱼日历定时任务启用状态
         self.temp_dir = tempfile.mkdtemp()  # 创建临时目录
         self.config = config
         print(self.config)
         self.moyu_api_url = config.get("moyu_api_url") or "https://api.52vmy.cn/api/wl/moyu"
-        print(f"当前使用的摸鱼日历API URL: {self.moyu_api_url}")
+        logger.info(f"当前使用的摸鱼日历API URL: {self.moyu_api_url}")
         self.default_timezone = config.get("default_timezone")
         try:
             self.user_custom_timezone = ZoneInfo(self.default_timezone)
@@ -32,22 +32,14 @@ class MyPlugin(Star):
         plugin_dir = os.path.dirname(os.path.abspath(__file__))
         # 将 schedule.json 存储在插件目录
         self.schedule_file = os.path.join(plugin_dir, 'schedule.json')
-        self.schedule_file_mtime = os.path.getmtime(self.schedule_file)
         self.load_schedule()
-        asyncio.get_event_loop().create_task(self.check_schedule_changes())
-
-    async def check_schedule_changes(self):
-        while True:
-            try:
-                current_mtime = os.path.getmtime(self.schedule_file)
-                if current_mtime != self.schedule_file_mtime:
-                    self.load_schedule()
-                    self.schedule_file_mtime = current_mtime
-            except Exception as e:
-                logger.error(f"检查 schedule.json 文件修改时间时出错: {e}")
-            await asyncio.sleep(60)  # 每隔 60 秒检查一次
-
+        asyncio.get_event_loop().create_task(self.scheduled_task()) 
+        
     def load_schedule(self):
+        if not self.enabled:
+            logger.info("定时任务已禁用，不加载定时任务信息。")
+            return
+        '''加载定时任务信息'''
         if os.path.exists(self.schedule_file):
             try:
                 with open(self.schedule_file, 'r') as f:
@@ -130,8 +122,22 @@ class MyPlugin(Star):
         self.user_custom_time = parsed_time
         # 保存消息发送目标
         self.message_target = event.unified_msg_origin
-        self.save_schedule()
         yield event.plain_result(f"自定义时间已设置为: {self.user_custom_time}")
+        self.save_schedule()
+        # 重置检查计数器
+        self.check_count = 0
+
+    @filter.command("timed_tasks")
+    async def toggle(self, event: AstrMessageEvent):
+        """
+        切换定时任务的启用/禁用状态
+        """
+        self.enabled = not self.enabled
+        status = "启用" if self.enabled else "禁用"
+        self.config["enabled"] = self.enabled
+        self.save_schedule()  # 保存更新后的配置
+        yield event.plain_result(f"摸鱼人日历已{status}")        
+        self.load_schedule()  # 载入初始化
 
     @filter.command("reset_time")
     async def reset_time(self, event: AstrMessageEvent):
@@ -156,7 +162,20 @@ class MyPlugin(Star):
             Image.fromFileSystem(image_path),  # 使用 fromFileSystem 方法
             Plain("⏰ 摸鱼提醒：工作再累，一定不要忘记摸鱼哦 ~")
         ]
-        yield event.chain_result(chain)
+        # 发送失败重试
+        max_retries = 3
+        for retry in range(max_retries):
+            try:
+                yield event.chain_result(chain)
+                logger.info("摸鱼图片发送成功。")
+                break
+            except Exception as e:
+                if retry < max_retries - 1:
+                    logger.error(f"发送消息失败，第 {retry + 1} 次重试: {str(e)}")
+                    await asyncio.sleep(5)  # 等待 5 秒后重试
+                else:
+                    logger.error(f"发送消息失败，达到最大重试次数: {str(e)}")
+                    yield event.plain_result("发送消息失败，请稍后再试")
 
     @filter.command("set_timezone")
     async def set_timezone(self, event: AstrMessageEvent, timezone: str):
@@ -174,9 +193,12 @@ class MyPlugin(Star):
     def get_next_target_time(self, now):
         """
         根据当前时间计算下一次发送摸鱼图片的目标时间。
+
         当前时间（datetime.datetime 对象）
         下一次发送摸鱼图片的目标时间（datetime.datetime 对象）
         """
+        if not self.enabled:
+            return None
         # 从用户自定义时间中提取小时和分钟
         target_hour, target_minute = map(int, self.user_custom_time.split(':'))
         # 创建目标时间对象，将当前时间的小时和分钟替换为目标小时和分钟
@@ -195,13 +217,18 @@ class MyPlugin(Star):
         # 初始化计数器
         check_count = 0
         while True:
+            if not self.enabled:
+                await asyncio.sleep(60)
+                continue
             try:
                 # 如果没有设置发送时间或消息目标，等待 60 秒后继续检查
                 if not self.user_custom_time or not self.message_target:
                     check_count += 1
                     if check_count >= 3:
-                        logger.error("检查设置次数达到上限，退出定时任务。")
-                        break
+                        logger.error("检查设置次数达到上限，暂停检查，等待设置更新。")
+                        # 不退出循环，而是继续等待
+                        await asyncio.sleep(60)
+                        continue
                     await asyncio.sleep(60)
                     continue
 
@@ -254,15 +281,20 @@ class MyPlugin(Star):
                         Image.fromFileSystem(image_path),  # 使用 fromFileSystem 方法
                         Plain("⏰ 摸鱼提醒：工作再累，一定不要忘记摸鱼哦 ~")
                     ])
-                    try:
-                        # 发送消息链到指定的消息目标
-                        await self.context.send_message(self.message_target, message_chain)
-                    except Exception as e:
-                        # 记录发送消息失败的错误日志
-                        logger.error(f"发送消息失败：{str(e)}")
-                else:
-                    # 记录获取图片失败的错误日志
-                    logger.error("获取图片失败，跳过本次发送")
+                    # 发送失败重试机制
+                    max_retries = 3
+                    for retry in range(max_retries):
+                        try:
+                            # 发送消息链到指定的消息目标
+                            await self.context.send_message(self.message_target, message_chain)
+                            logger.info("摸鱼图片发送成功。")
+                            break
+                        except Exception as e:
+                            if retry < max_retries - 1:
+                                logger.error(f"发送消息失败，第 {retry + 1} 次重试: {str(e)}")
+                                await asyncio.sleep(5)  # 等待 5 秒后重试
+                            else:
+                                logger.error(f"定时发送消息失败: {str(e)}")
 
                 # 计算下一次目标时间
                 next_target_time = self.get_next_target_time(now)
@@ -275,9 +307,9 @@ class MyPlugin(Star):
                 import traceback
                 # 记录错误堆栈信息
                 logger.error(f"堆栈信息: {traceback.format_exc()}")
-                # 新增：初始化错误重试计数器
+                # 初始化错误重试计数器
                 error_retry_count = 0
-                # 新增：设置最大重试次数
+                # 设置最大重试次数
                 max_retry_count = 3
                 while error_retry_count < max_retry_count:
                     # 出错后等待 60 秒再重试
@@ -288,13 +320,12 @@ class MyPlugin(Star):
                         if not self.user_custom_time or not self.message_target:
                             check_count += 1
                             if check_count >= 3:
-                                logger.error("检查设置次数达到上限，退出定时任务。")
-                                break
+                                logger.error("检查设置次数达到上限，暂停检查，等待设置更新。")
+                                continue
                             continue
-                        # 后续任务逻辑...
-                        # ... existing code ...
                         break  # 如果成功执行，跳出重试循环
                     except Exception as e:
                         logger.error(f"第 {error_retry_count} 次重试失败: {str(e)}")
                 if error_retry_count == max_retry_count:
-                    logger.error("达到最大重试次数，退出定时任务。")
+                    logger.error("达到最大重试次数，暂停任务，等待设置更新。")
+
