@@ -1,6 +1,9 @@
 # 摸鱼人日历
 
-由原作者[Quirrel-zh](https://github.com/Quirrel-zh/astrbot_plugin_moyuren) 项目衍生加强
+![Image text](https://github.com/DuBwTf/astrbot_plugin_moyurenpro/blob/ae88056ae5c3d57ed41059e4a533faa24fd56100/moyu.png
+)
+
+由原作者[Quirrel-zh](https://github.com/Quirrel-zh/astrbot_plugin_moyuren) 项目加强
 
 # 支持
 
