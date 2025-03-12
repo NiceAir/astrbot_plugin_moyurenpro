@@ -239,10 +239,12 @@ class MyPlugin(Star):
                 # 检查当前日期是否为工作日
                 is_workday = calendar.is_workday(now.date())
                 if not is_workday:
+                    logger.info(f"当前日期 {now.date()} 不是工作日，等待到下一天午夜继续检查。")
                     # 如果不是工作日，计算到下一天午夜的时间差
                     next_day = now + datetime.timedelta(days=1)
                     next_day_midnight = next_day.replace(hour=0, minute=0, second=0, microsecond=0)
                     time_until_next_day = (next_day_midnight - now).total_seconds()
+                    logger.info(f"距离下一天午夜还有 {int(time_until_next_day)} 秒，开始等待。")
                     # 等待到下一天午夜再继续检查
                     await asyncio.sleep(time_until_next_day)
                     continue
