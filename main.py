@@ -124,6 +124,7 @@ class MyPlugin(Star):
         self.message_target = event.unified_msg_origin
         yield event.plain_result(f"自定义时间已设置为: {self.user_custom_time}")
         self.save_schedule()
+        self.load_schedule()
         # 重置检查计数器
         self.check_count = 0
 
