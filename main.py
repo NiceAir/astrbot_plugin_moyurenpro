@@ -11,14 +11,14 @@ import tempfile
 from zoneinfo import ZoneInfo  # 导入 ZoneInfo 用于处理时区
 import chinese_calendar as calendar  # 导入 chinese_calendar 库
 
-@register("moyuren", "quirrel", "一个简单的摸鱼人日历插件", "1.3.5")
+@register("moyuren", "quirrel", "一个简单的摸鱼人日历插件", "1.3.6")
 class MyPlugin(Star):
     def __init__(self, context: Context, config: dict):
         super().__init__(context)
         self.enabled = config.get("enabled", True)  # 从配置文件读取摸鱼日历定时任务启用状态
         self.temp_dir = tempfile.mkdtemp()  # 创建临时目录
         self.config = config
-        print(self.config)
+        logger.info(f"插件配置信息: {self.config}")
         self.moyu_api_url = config.get("moyu_api_url") or "https://api.52vmy.cn/api/wl/moyu"
         logger.info(f"当前使用的摸鱼日历API URL: {self.moyu_api_url}")
         self.default_timezone = config.get("default_timezone")
@@ -128,6 +128,50 @@ class MyPlugin(Star):
         # 重置检查计数器
         self.check_count = 0
 
+    def save_config(self):
+        """
+        保存配置信息到配置文件
+        """
+        try:
+            # 获取当前脚本所在目录
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            # 构建上一级目录的config文件夹路径
+            parent_dir = os.path.dirname(current_dir)
+            grandparent_dir = os.path.dirname(os.path.dirname(current_dir))
+            config_dir = os.path.join(grandparent_dir, 'config')
+            # 确保配置目录存在
+            if not os.path.exists(config_dir):
+                os.makedirs(config_dir)
+            config_file = os.path.join(config_dir, 'astrbot_plugin_moyurenpro_config.json')
+            with open(config_file, 'w', encoding='utf-8') as f:
+                json.dump(self.config, f, ensure_ascii=False, indent=4)
+            # 添加日志记录保存目录
+            logger.info(f"配置文件已保存到: {config_file}")
+        except Exception as e:
+            logger.error(f"保存配置文件时出错: {e}")
+
+    async def terminate(self):
+        """
+        关闭定时任务并清理缓存
+        """
+        # 禁用定时任务
+        self.enabled = False
+        self.config["enabled"] = self.enabled
+        self.save_config()  # 保存配置文件
+        logger.info(f"定时任务启用状态已更新为: {self.enabled}")
+        try:
+            self.save_schedule()
+            logger.info("定时任务配置已保存")
+        except Exception as e:
+            logger.error(f"保存定时任务配置时出错: {e}")
+        # 清理临时目录
+        import shutil
+        if os.path.exists(self.temp_dir):
+            shutil.rmtree(self.temp_dir)
+            logger.info("临时目录已清理")
+        else:
+            logger.info("临时目录不存在，无需清理")
+
     @filter.command("timed_tasks")
     async def toggle(self, event: AstrMessageEvent):
         """
@@ -136,6 +180,7 @@ class MyPlugin(Star):
         self.enabled = not self.enabled
         status = "启用" if self.enabled else "禁用"
         self.config["enabled"] = self.enabled
+        self.save_config()  # 保存配置文件
         self.save_schedule()  # 保存更新后的配置
         yield event.plain_result(f"摸鱼人日历已{status}")        
         self.load_schedule()  # 载入初始化
@@ -331,4 +376,5 @@ class MyPlugin(Star):
                         logger.error(f"第 {error_retry_count} 次重试失败: {str(e)}")
                 if error_retry_count == max_retry_count:
                     logger.error("达到最大重试次数，暂停任务，等待设置更新。")
+         
 
