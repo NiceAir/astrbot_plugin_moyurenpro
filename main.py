@@ -32,12 +32,12 @@ class MyPlugin(Star):
 
         parsed_time = self.parse_time("09:01")
         self.user_custom_time = parsed_time
-        self.save_schedule()
 
         # 获取当前脚本所在目录
         plugin_dir = os.path.dirname(os.path.abspath(__file__))
         # 将 schedule.json 存储在插件目录
         self.schedule_file = os.path.join(plugin_dir, 'schedule.json')
+        self.save_schedule()
         self.load_schedule()
         asyncio.get_event_loop().create_task(self.scheduled_task())
         
