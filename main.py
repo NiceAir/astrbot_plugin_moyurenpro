@@ -11,7 +11,7 @@ import tempfile
 from zoneinfo import ZoneInfo  # 导入 ZoneInfo 用于处理时区
 import chinese_calendar as calendar  # 导入 chinese_calendar 库
 
-@register("moyuren", "niceair", "一个简单的摸鱼人日历插件", "1.3.6")
+@register("moyuren", "niceair", "一个中文触发的摸鱼日历插件", "1.3.6")
 class MyPlugin(Star):
     def __init__(self, context: Context, config: dict):
         super().__init__(context)
@@ -28,12 +28,18 @@ class MyPlugin(Star):
             self.user_custom_timezone = ZoneInfo('Asia/Shanghai')
         self.user_custom_time = None
         self.message_target = None
+
+
+        parsed_time = self.parse_time("09:01")
+        self.user_custom_time = parsed_time
+        self.save_schedule()
+
         # 获取当前脚本所在目录
         plugin_dir = os.path.dirname(os.path.abspath(__file__))
         # 将 schedule.json 存储在插件目录
         self.schedule_file = os.path.join(plugin_dir, 'schedule.json')
         self.load_schedule()
-        asyncio.get_event_loop().create_task(self.scheduled_task()) 
+        asyncio.get_event_loop().create_task(self.scheduled_task())
         
     def load_schedule(self):
         if not self.enabled:
