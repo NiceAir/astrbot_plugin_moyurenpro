@@ -11,7 +11,7 @@ import tempfile
 from zoneinfo import ZoneInfo  # 导入 ZoneInfo 用于处理时区
 import chinese_calendar as calendar  # 导入 chinese_calendar 库
 
-@register("moyuren", "quirrel", "一个简单的摸鱼人日历插件", "1.3.6")
+@register("moyuren", "niceair", "一个简单的摸鱼人日历插件", "1.3.6")
 class MyPlugin(Star):
     def __init__(self, context: Context, config: dict):
         super().__init__(context)
@@ -193,7 +193,7 @@ class MyPlugin(Star):
         self.save_schedule()
         yield event.plain_result("自定义时间已重置")
 
-    @filter.command("execute_now")
+    @filter.command("摸鱼日历")
     async def execute_now(self, event: AstrMessageEvent):
         '''立即发送！'''
         image_path = await self.get_moyu_image()
@@ -203,10 +203,7 @@ class MyPlugin(Star):
         now = datetime.datetime.now(self.user_custom_timezone)
         current_time = now.strftime("%Y-%m-%d %H:%M")
         chain = [
-            Plain("📅 摸鱼人日历"),
-            Plain(f"🎯 {current_time}"),
             Image.fromFileSystem(image_path),  # 使用 fromFileSystem 方法
-            Plain("⏰ 摸鱼提醒：工作再累，一定不要忘记摸鱼哦 ~")
         ]
         # 发送失败重试
         max_retries = 3
