@@ -123,6 +123,7 @@ class MyPlugin(Star):
         if self.manager_id == sender_id and self.manager_name == sender_name:
             return True
         logger.info(f"check_manager not pass: {manager_id, sender_name}, 已设置的为：{self.manager_id, self.manager_name}")
+        yield event.plain_result("权限不足")
         return False
 
 
@@ -130,14 +131,14 @@ class MyPlugin(Star):
     async def set_manager(self, event: AstrMessageEvent):
         sender_id = event.get_sender_id()
         sender_name = event.get_sender_name()
-        mid = self.manager_id
-        mname = self.manager_name
-        if mid != "" or mname != "":
-            logger.info(f"set_master failed: {manager_id, sender_name}, 已设置的为：{mid, mname}")
+        if self.manager_id != "" or self.manager_name != "":
+            logger.info(f"set_master failed: {sender_id, sender_name}, 已设置的为：{self.manager_id, self.manager_name}")
+            yield event.plain_result("failed")
             return
         self.manager_id = sender_id
         self.manager_name = sender_name
         logger.info(f"set_master success, 已设置的为：{self.manager_id, self.manager_name}")
+        yield event.plain_result("success")
 
 
 
