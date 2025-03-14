@@ -29,9 +29,8 @@ class MyPlugin(Star):
         self.user_custom_time = None
         self.message_target = None
 
-
-        parsed_time = self.parse_time("09:01")
-        self.user_custom_time = parsed_time
+        self.manager_id = None
+        self.manager_name = None
 
         # 获取当前脚本所在目录
         plugin_dir = os.path.dirname(os.path.abspath(__file__))
@@ -117,8 +116,34 @@ class MyPlugin(Star):
             except ValueError:
                 return None
 
+
+    def is_manager(self, event: AstrMessageEvent):
+        sender_id = event.get_sender_id()
+        sender_name = event.get_sender_name()
+        if self.manager_id == sender_id and self.manager_name == sender_name:
+            return True
+        logger.info(f"check_manager not pass: {manager_id, sender_name}, 已设置的为：{self.manager_id, self.manager_name}")
+        return False
+
+
+    @filter.command("set_master")
+    async def set_master(self, event: AstrMessageEvent):
+        sender_id = event.get_sender_id()
+        sender_name = event.get_sender_name()
+        if self.manager_id or self.manager_name:
+            logger.info(f"set_master failed: {manager_id, sender_name}, 已设置的为：{self.manager_id, self.manager_name}")
+            return
+        self.manager_id = sender_id
+        self.manager_name = sender_name
+        logger.info(f"set_master success, 已设置的为：{self.manager_id, self.manager_name}")
+
+
+
     @filter.command("set_time")
     async def set_time(self, event: AstrMessageEvent, time: str):
+        if not self.is_manager(event):
+            return
+
         '''设置发送摸鱼图片的时间 格式为 HH:MM或HHMM'''
         time = time.strip()
         parsed_time = self.parse_time(time)
@@ -180,6 +205,8 @@ class MyPlugin(Star):
 
     @filter.command("timed_tasks")
     async def toggle(self, event: AstrMessageEvent):
+        if not self.is_manager(event):
+            return
         """
         切换定时任务的启用/禁用状态
         """
@@ -193,6 +220,8 @@ class MyPlugin(Star):
 
     @filter.command("reset_time")
     async def reset_time(self, event: AstrMessageEvent):
+        if not self.is_manager(event):
+            return
         '''重置发送摸鱼图片的时间'''
         self.user_custom_time = None
         self.message_target = None
@@ -228,6 +257,8 @@ class MyPlugin(Star):
 
     @filter.command("set_timezone")
     async def set_timezone(self, event: AstrMessageEvent, timezone: str):
+        if not self.is_manager(event):
+            return
         """
         设置发送摸鱼图片的时区
         如 'Asia/Shanghai'
@@ -379,5 +410,4 @@ class MyPlugin(Star):
                         logger.error(f"第 {error_retry_count} 次重试失败: {str(e)}")
                 if error_retry_count == max_retry_count:
                     logger.error("达到最大重试次数，暂停任务，等待设置更新。")
-         
 
