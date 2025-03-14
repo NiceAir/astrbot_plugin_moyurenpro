@@ -29,8 +29,8 @@ class MyPlugin(Star):
         self.user_custom_time = None
         self.message_target = None
 
-        self.manager_id = None
-        self.manager_name = None
+        self.manager_id = ""
+        self.manager_name = ""
 
         # 获取当前脚本所在目录
         plugin_dir = os.path.dirname(os.path.abspath(__file__))
@@ -130,8 +130,9 @@ class MyPlugin(Star):
     async def set_manager(self, event: AstrMessageEvent):
         sender_id = event.get_sender_id()
         sender_name = event.get_sender_name()
-        if self.manager_id or self.manager_name:
+        if self.manager_id != "" or self.manager_name != "":
             logger.info(f"set_master failed: {manager_id, sender_name}, 已设置的为：{self.manager_id, self.manager_name}")
+            yield event.plain_result()
             return
         self.manager_id = sender_id
         self.manager_name = sender_name
