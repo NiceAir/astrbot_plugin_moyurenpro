@@ -126,8 +126,8 @@ class MyPlugin(Star):
         return False
 
 
-    @filter.command("set_master")
-    async def set_master(self, event: AstrMessageEvent):
+    @filter.command("set_manager")
+    async def set_manager(self, event: AstrMessageEvent):
         sender_id = event.get_sender_id()
         sender_name = event.get_sender_name()
         if self.manager_id or self.manager_name:
