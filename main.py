@@ -147,6 +147,7 @@ class MyPlugin(Star):
     def is_manager(self, event: AstrMessageEvent):
         sender_id = event.get_sender_id()
         sender_name = event.get_sender_name()
+        logger.info(f"is_manager result:{sender_id, sender_name}, 已设置的为：{self.manager_id, self.manager_name}")
         if self.manager_id == sender_id and self.manager_name == sender_name:
             return True
         logger.info(f"check_manager not pass: {sender_id, sender_name}, 已设置的为：{self.manager_id, self.manager_name}")
