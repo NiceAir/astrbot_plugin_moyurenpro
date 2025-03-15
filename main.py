@@ -158,6 +158,10 @@ class MyPlugin(Star):
     async def set_manager(self, event: AstrMessageEvent):
         sender_id = event.get_sender_id()
         sender_name = event.get_sender_name()
+        logger.info(f"sender_id:{sender_id},"
+                    f" sender_name:{sender_name}, "
+                    f"session_id:{event.get_session_id()},"
+                    f" unified_msg_origin:{event.unified_msg_origin}")
         if self.manager_id != "" or self.manager_name != "":
             logger.info(f"set_master failed: {sender_id, sender_name}, 已设置的为：{self.manager_id, self.manager_name}")
             yield event.plain_result("failed")
