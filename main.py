@@ -195,7 +195,7 @@ class MyPlugin(Star):
         self.check_count = 0
 
     @filter.command("list_time")
-    async def list_time(self, event: AstrMessageEvent, time: str):
+    async def list_time(self, event: AstrMessageEvent):
         if not self.is_manager(event):
             return
 
