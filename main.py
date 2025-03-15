@@ -8,7 +8,7 @@ import datetime
 import aiohttp
 import os
 import tempfile
-from zoneinfo import ZoneInfo  # 导入 ZoneInfo 用于处理时区
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError  # 导入 ZoneInfo 用于处理时区
 import chinese_calendar as calendar  # 导入 chinese_calendar 库
 
 @register("moyuren", "niceair", "一个中文触发的摸鱼日历插件", "1.3.6")
@@ -32,13 +32,40 @@ class MyPlugin(Star):
         self.manager_id = ""
         self.manager_name = ""
 
+
         # 获取当前脚本所在目录
         plugin_dir = os.path.dirname(os.path.abspath(__file__))
+
+        self.manager_file = os.path.join(plugin_dir, 'managers.json')
+        self.load_manager()
+
         # 将 schedule.json 存储在插件目录
         self.schedule_file = os.path.join(plugin_dir, 'schedule.json')
         self.save_schedule()
         self.load_schedule()
         asyncio.get_event_loop().create_task(self.scheduled_task())
+
+    def load_manager(self):
+        if os.path.exists(self.manager_file):
+            try:
+                with open(self.manager_file, 'r') as f:
+                    data = json.load(f)
+                    self.manager_id = data.get('manager_id')
+                    self.manager_name = data.get('manager_name')
+
+            except Exception as e:
+                logger.error(f"加载管理者信息失败: {e}")
+
+    def save_manager(self):
+        data = {
+            'manager_id': self.manager_id,
+            'manager_name': self.manager_name
+        }
+        try:
+            with open(self.manager_file, 'w') as f:
+                json.dump(data, f)
+        except Exception as e:
+            logger.error(f"保存管理者信息失败: {e}")
         
     def load_schedule(self):
         if not self.enabled:
@@ -122,7 +149,7 @@ class MyPlugin(Star):
         sender_name = event.get_sender_name()
         if self.manager_id == sender_id and self.manager_name == sender_name:
             return True
-        logger.info(f"check_manager not pass: {manager_id, sender_name}, 已设置的为：{self.manager_id, self.manager_name}")
+        logger.info(f"check_manager not pass: {sender_id, sender_name}, 已设置的为：{self.manager_id, self.manager_name}")
         yield event.plain_result("权限不足")
         return False
 
@@ -137,6 +164,7 @@ class MyPlugin(Star):
             return
         self.manager_id = sender_id
         self.manager_name = sender_name
+        self.save_manager()
         logger.info(f"set_master success, 已设置的为：{self.manager_id, self.manager_name}")
         yield event.plain_result("success")
 
@@ -161,6 +189,21 @@ class MyPlugin(Star):
         self.load_schedule()
         # 重置检查计数器
         self.check_count = 0
+
+    @filter.command("list_time")
+    async def list_time(self, event: AstrMessageEvent, time: str):
+        if not self.is_manager(event):
+            return
+
+        if os.path.exists(self.schedule_file):
+            try:
+                with open(self.schedule_file, 'r') as f:
+                    data = json.load(f)
+                    logger.info(f"已经设置的定时时间：{data}")
+
+            except Exception as e:
+                logger.error(f"加载定时任务信息失败: {e}")
+
 
     def save_config(self):
         """
